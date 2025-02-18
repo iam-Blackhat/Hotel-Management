@@ -69,7 +69,8 @@ Route::prefix('orders')
     ->group(function () {
         Route::get('/', [FoodOrderController::class, 'index']);
         Route::post('/', [FoodOrderController::class, 'store']);
-        Route::get('/{truck}', [FoodOrderController::class, 'show']);
-        Route::put('/{truck}', [FoodOrderController::class, 'update']);
-        Route::delete('/{truck}', [FoodOrderController::class, 'destroy']);
+        Route::get('/{order}', [FoodOrderController::class, 'show']);
+        Route::put('/{order}', [FoodOrderController::class, 'update']);
+        Route::delete('/{order}', [FoodOrderController::class, 'destroy']);
+        Route::get('/print-receipt/{order}', [FoodOrderController::class, 'printReceipt']);
     });

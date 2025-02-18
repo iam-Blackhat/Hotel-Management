@@ -13,7 +13,7 @@ class FoodTruckOrderItems extends Model
 
     protected $casts = ['metadata' => 'array'];
 
-            public function truck(){
+    public function truck(){
         return $this->belongsTo(Truck::class);
     }
 }

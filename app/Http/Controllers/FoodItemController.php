@@ -56,7 +56,7 @@ class FoodItemController extends Controller
 
     public function update(Request $request, FoodItem $foodItem)
     {
-        $request->validate([
+        $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'price' => 'required|numeric|min:0',
             'image' => 'nullable|image|max:2048',
@@ -69,6 +69,13 @@ class FoodItemController extends Controller
             }
             $imagePath = $request->file('image')->store('food-items', 'public');
             $foodItem->update(['image' => $imagePath]);
+        }
+
+        if ($validator->fails()) {
+        return response()->json([
+            'success' => false,
+            'errors' => $validator->errors(),
+        ], 422);
         }
 
         $foodItem->update([

@@ -58,10 +58,17 @@ class CategoryController extends Controller
     // Update an existing category
     public function update(Request $request, Category $category)
     {
-        $request->validate([
+        $validator = Validator::make($request->all(), [
             'name' => "required|string|max:255|unique:categories,name,{$category->id}",
             'description' => 'nullable|string',
         ]);
+
+        if ($validator->fails()) {
+        return response()->json([
+            'success' => false,
+            'errors' => $validator->errors(),
+        ], 422);
+        }
 
         $category->update([
             'name' => $request->name,

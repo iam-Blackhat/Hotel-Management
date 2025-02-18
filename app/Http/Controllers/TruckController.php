@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Truck;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Validator as Validator;
 
 class TruckController extends Controller
 {
@@ -22,13 +23,19 @@ class TruckController extends Controller
      */
     public function store(Request $request)
     {
-        $request->validate(
-            [
+        $validator = Validator::make($request->all(),[
                 'truck_name' => 'required',
                 'license_plate' => 'required|unique:trucks,license_plate,except,id',
                 'location' => 'required'
             ]
             );
+        if ($validator->fails()) {
+        return response()->json([
+            'success' => false,
+            'errors' => $validator->errors(),
+        ], 422);
+        }
+
         $truck = Truck::create([
             'truck_name' => $request->truck_name,
             'license_plate' => $request->license_plate,
@@ -51,11 +58,19 @@ class TruckController extends Controller
      */
     public function update(Request $request, Truck $truck)
     {
-        $request->validate([
+        $validator = Validator::make($request->all(),[
             'truck_name' => 'required',
             'license_plate' => "required|unique:trucks,license_plate,{$truck->id}",
             'location' => 'required',
         ]);
+
+        if ($validator->fails()) {
+        return response()->json([
+            'success' => false,
+            'errors' => $validator->errors(),
+        ], 422);
+    }
+
         $truck->update([
             'truck_name' => $request->truck_name,
             'license_plate' => $request->license_plate,

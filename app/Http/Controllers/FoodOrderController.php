@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Validator as Validator;
 use Illuminate\Validation\Rule;
+use App\Services\ReceiptPrinterService;
 
 class FoodOrderController extends Controller
 {
@@ -28,7 +29,6 @@ class FoodOrderController extends Controller
     {
     $validator = Validator::make($request->all(), [
         "orders" => "required|array",
-        "orders.*.truck_id" => "required|exists:trucks,id",
         "orders.*.food_id" => [
             "required",
             Rule::exists('food_items', 'id'),
@@ -39,6 +39,7 @@ class FoodOrderController extends Controller
         "numeric"
         ],
         "orders.*.subtotal" => "required|numeric",
+        "truck_id" => "required|exists:trucks,id",
         "customer_number" => "required|string",
         "status" => "required|string"
     ]);
@@ -54,7 +55,8 @@ class FoodOrderController extends Controller
     $foodOrders = [];
 
     $foodOrder = FoodTruckOrderItems::create([
-        "metadata" => $request->orders
+        "metadata" => $request->orders,
+        "truck_id" => $request->truck_id
     ]);
     $foodOrders[] = $foodOrder;
 
@@ -82,7 +84,7 @@ class FoodOrderController extends Controller
     public function show(string $id)
     {
         $foodOrder = FoodTruckOrders::where('order_id',$id)->get();
-        $foodOrderItem = FoodTruckOrderItems::find($id)->first();
+        $foodOrderItem = FoodTruckOrderItems::where('id',$id)->get();
 
         return response()->json([
             'success' => true,
@@ -95,16 +97,53 @@ class FoodOrderController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(Request $request, FoodTruckOrders $foodTruckOrders)
     {
-        //
+        $validator = Validator::make($request->all(),[
+            "order_status" => "required|string"
+        ]);
+
+        if ($validator->fails()) {
+        return response()->json([
+            'success' => false,
+            'errors' => $validator->errors(),
+        ], 422);
+        }
+        $foodTruckOrders->update([
+            "order_status" => $request->order_status
+        ]);
+        return response()->json(['success' => true, 'message' => 'Food order status upated successfully!', 'data' => $foodTruckOrders],Response::HTTP_OK);
+
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy(FoodTruckOrderItems $foodTruckOrderItems)
     {
-        //
+        $foodTruckOrderItems->delete();
+        return response()->json([
+            'success' => true,
+            'message' => 'Fodd order deleted successfully!'
+        ], Response::HTTP_OK);
     }
+
+    public function printReceipt($orderId)
+    {
+        // Simulated order data (Replace with actual database order retrieval)
+        $foodOrder = FoodTruckOrders::where('order_id',$orderId)->get();
+        $foodOrderItem = FoodTruckOrderItems::find($orderId)->first();
+      $order = [
+        'items' => [
+            ['name' => 'Burger', 'quantity' => 2, 'price' => 5.00],
+            ['name' => 'Fries', 'quantity' => 1, 'price' => 2.50],
+        ],
+        'total' => 12.50
+    ];
+        $printerService = new ReceiptPrinterService();
+        $result = $printerService->printReceipt($order);
+
+        return response()->json(['message' => $result]);
+    }
+
 }
