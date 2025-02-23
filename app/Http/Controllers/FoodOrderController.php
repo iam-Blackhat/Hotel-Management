@@ -127,7 +127,7 @@ class FoodOrderController extends Controller
             'message' => 'Fodd order deleted successfully!'
         ], Response::HTTP_OK);
     }
-    public function generateReceiptPdf($orderId)
+   public function generateReceiptPdf($orderId)
     {
         // Retrieve the order
         $foodOrder = FoodTruckOrders::where('order_id', $orderId)->first();
@@ -140,11 +140,18 @@ class FoodOrderController extends Controller
             return response()->json(['error' => 'Order item not found'], 404);
         }
 
+        // Format date and time
+        $orderDate = $foodOrderItem->created_at->format('Y-m-d'); // Format: 2025-02-23
+        $orderTime = $foodOrderItem->created_at->format('H:i:s'); // Format: 14:30:15
+
         // Metadata is already an array (no need for json_decode)
         $metadata = $foodOrderItem->metadata;
 
         // Construct order data
         $order = [
+            'id' => $foodOrderItem->id?$foodOrderItem->id:"",
+            'date' => $orderDate,
+            'time' => $orderTime,
             'items' => [],
             'total' => $foodOrder->total_amount ?? 0
         ];
@@ -156,7 +163,7 @@ class FoodOrderController extends Controller
 
             $order['items'][] = [
                 'index' => $key + 1, // Adding 1 to start from 1 instead of 0
-                'name' => $foodName, // Using the retrieved food name
+                'name' => $foodName,
                 'quantity' => $item['quantity'],
                 'price' => $item['price'],
             ];
