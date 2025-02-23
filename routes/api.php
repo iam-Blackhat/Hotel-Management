@@ -72,5 +72,4 @@ Route::prefix('orders')
         Route::get('/{order}', [FoodOrderController::class, 'show']);
         Route::put('/{order}', [FoodOrderController::class, 'update']);
         Route::delete('/{order}', [FoodOrderController::class, 'destroy']);
-        Route::get('/print-receipt/{order}', [FoodOrderController::class, 'printReceipt']);
     });

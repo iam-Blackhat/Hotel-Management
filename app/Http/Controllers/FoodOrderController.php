@@ -127,23 +127,4 @@ class FoodOrderController extends Controller
             'message' => 'Fodd order deleted successfully!'
         ], Response::HTTP_OK);
     }
-
-    public function printReceipt($orderId)
-    {
-        // Simulated order data (Replace with actual database order retrieval)
-        $foodOrder = FoodTruckOrders::where('order_id',$orderId)->get();
-        $foodOrderItem = FoodTruckOrderItems::find($orderId)->first();
-      $order = [
-        'items' => [
-            ['name' => 'Burger', 'quantity' => 2, 'price' => 5.00],
-            ['name' => 'Fries', 'quantity' => 1, 'price' => 2.50],
-        ],
-        'total' => 12.50
-    ];
-        $printerService = new ReceiptPrinterService();
-        $result = $printerService->printReceipt($order);
-
-        return response()->json(['message' => $result]);
-    }
-
 }
