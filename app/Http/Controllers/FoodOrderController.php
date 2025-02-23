@@ -2,14 +2,14 @@
 
 namespace App\Http\Controllers;
 
-
+use App\Models\FoodItem;
 use App\Models\FoodTruckOrderItems;
 use App\Models\FoodTruckOrders;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Validator as Validator;
 use Illuminate\Validation\Rule;
-use App\Services\ReceiptPrinterService;
+use App\Services\PdfReceiptService;
 
 class FoodOrderController extends Controller
 {
@@ -127,4 +127,48 @@ class FoodOrderController extends Controller
             'message' => 'Fodd order deleted successfully!'
         ], Response::HTTP_OK);
     }
+    public function generateReceiptPdf($orderId)
+    {
+        // Retrieve the order
+        $foodOrder = FoodTruckOrders::where('order_id', $orderId)->first();
+
+        // Retrieve the order item
+        $foodOrderItem = FoodTruckOrderItems::where('id', $orderId)->first();
+
+        // Check if order item exists
+        if (!$foodOrderItem) {
+            return response()->json(['error' => 'Order item not found'], 404);
+        }
+
+        // Metadata is already an array (no need for json_decode)
+        $metadata = $foodOrderItem->metadata;
+
+        // Construct order data
+        $order = [
+            'items' => [],
+            'total' => $foodOrder->total_amount ?? 0
+        ];
+
+        foreach ($metadata as $key => $item) {
+            // Fetch food name from FoodItems table based on food_id
+            $foodItem = FoodItem::where('id', $item['food_id'])->first();
+            $foodName = $foodItem ? $foodItem->name : 'Unknown Item';
+
+            $order['items'][] = [
+                'index' => $key + 1, // Adding 1 to start from 1 instead of 0
+                'name' => $foodName, // Using the retrieved food name
+                'quantity' => $item['quantity'],
+                'price' => $item['price'],
+            ];
+        }
+
+        // Generate PDF
+        $pdfService = new PdfReceiptService();
+        $pdf = $pdfService->generateReceipt($order);
+
+        return response($pdf)
+            ->header('Content-Type', 'application/pdf')
+            ->header('Content-Disposition', 'inline; filename="receipt.pdf"');
+    }
+
 }
