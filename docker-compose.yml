@@ -6,7 +6,7 @@ services:
         container_name: laravel_hotel_app
         restart: unless-stopped
         volumes:
-            - /home/ubuntu/hotel-management:/var/www/html/hotel-management
+            - /Users/datasirpi/Desktop/hotel-management:/var/www/html/hotel-management
         networks:
             - laravel_net
         depends_on:
@@ -33,7 +33,7 @@ services:
         ports:
             - "80:80"
         volumes:
-            - /home/ubuntu/hotel-management:/var/www/html/hotel-management
+            - /Users/datasirpi/Desktop/hotel-management:/var/www/html/hotel-management
             - ./nginx.conf:/etc/nginx/conf.d/default.conf
         networks:
             - laravel_net
