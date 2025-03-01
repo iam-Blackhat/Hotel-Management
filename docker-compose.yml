@@ -18,8 +18,8 @@ services:
         restart: unless-stopped
         environment:
             MYSQL_DATABASE: hotel_management
-            MYSQL_USER: laraveluser
-            MYSQL_PASSWORD: secret
+            MYSQL_USER: root
+            MYSQL_PASSWORD:
             MYSQL_ROOT_PASSWORD: rootpassword
         volumes:
             - db_data:/var/lib/mysql
