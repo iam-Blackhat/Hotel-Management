@@ -43,7 +43,7 @@ class FoodItemController extends Controller
             'price' => $request->price,
             'image' => $imagePath,
             'category_id' => $request->category_id,
-            'is_available' => $request->has('is_available'),
+            'is_available' => $request->is_available?$request->is_available:false,
         ]);
 
         return response()->json(['success' => true, 'message' => 'Food item added successfully!', 'data' => $foodItem], Response::HTTP_CREATED);

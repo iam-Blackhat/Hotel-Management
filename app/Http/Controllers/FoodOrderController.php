@@ -18,8 +18,9 @@ class FoodOrderController extends Controller
      */
     public function index()
     {
-        $foodOrders = FoodTruckOrderItems::with('truck')->get();
-        return response()->json(['success' => true, 'data' => $foodOrders], Response::HTTP_OK);
+        $foodOrdersItem = FoodTruckOrderItems::with('truck')->get();
+        $foodOrders = FoodTruckOrders::all();
+        return response()->json(['success' => true, 'data' => $foodOrders,$foodOrdersItem], Response::HTTP_OK);
     }
 
     /**
@@ -40,7 +41,8 @@ class FoodOrderController extends Controller
         ],
         "orders.*.subtotal" => "required|numeric",
         "truck_id" => "required|exists:trucks,id",
-        "customer_number" => "required|string",
+        "customer_number" => "string",
+        "payment_type" => "required|string",
         "status" => "required|string"
     ]);
 
@@ -69,6 +71,7 @@ class FoodOrderController extends Controller
     FoodTruckOrders::create([
         "order_id" => $order_id,
         "customer_number" => $request->customer_number,
+        "payment_type" => $request->payment_type,
         "total_amount" => $total_amount,
         "order_status" => $request->status
     ]);
