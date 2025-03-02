@@ -23,11 +23,10 @@ class FoodItemController extends Controller
             'truck_id' => 'required|exists:categories,truck_id',
             'name' => 'required|string|max:255',
             'price' => 'required|numeric|min:0',
-            'image' => 'nullable|image|max:2048',
+            'image' => 'nullable|string|max:255',
             'category_id' => 'required|exists:categories,id',
         ]);
 
-        $imagePath = $request->file('image') ? $request->file('image')->store('food-items', 'public') : null;
 
         if ($validator->fails()) {
         return response()->json([
@@ -41,7 +40,7 @@ class FoodItemController extends Controller
             'truck_id' => $request->truck_id,
             'description' => $request->description,
             'price' => $request->price,
-            'image' => $imagePath,
+            'image' => $request->image,
             'category_id' => $request->category_id,
             'is_available' => $request->is_available?$request->is_available:false,
         ]);
