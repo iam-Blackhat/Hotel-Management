@@ -24,8 +24,16 @@ return [
     'allowed_origins_patterns' => [],
 
     'allowed_headers' => ['Content-Type', 'Authorization', 'X-Requested-With', '*'],
-    
+
     'exposed_headers' => ['*'], // Fixed syntax
+
+    'allowed_origins' => ['*'],
+
+    'allowed_origins_patterns' => [],
+
+    'allowed_headers' => ['*'],
+
+    'exposed_headers' => [],
 
     'max_age' => 0,
 
