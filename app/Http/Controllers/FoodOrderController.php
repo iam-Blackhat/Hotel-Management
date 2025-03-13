@@ -40,6 +40,7 @@ class FoodOrderController extends Controller
         ],
         "orders.*.subtotal" => "required|numeric",
         "truck_id" => "required|exists:trucks,id",
+        "payment_type" => "required|string",
         "customer_number" => "required|string",
         "status" => "required|string"
     ]);
@@ -69,6 +70,7 @@ class FoodOrderController extends Controller
     FoodTruckOrders::create([
         "order_id" => $order_id,
         "customer_number" => $request->customer_number,
+        "payment_type" => $request->payment_type,
         "total_amount" => $total_amount,
         "order_status" => $request->status
     ]);

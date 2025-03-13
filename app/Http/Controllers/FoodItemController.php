@@ -23,11 +23,9 @@ class FoodItemController extends Controller
             'truck_id' => 'required|exists:categories,truck_id',
             'name' => 'required|string|max:255',
             'price' => 'required|numeric|min:0',
-            'image' => 'nullable|image|max:2048',
+            'image' => 'nullable|string|max:2048',
             'category_id' => 'required|exists:categories,id',
         ]);
-
-        $imagePath = $request->file('image') ? $request->file('image')->store('food-items', 'public') : null;
 
         if ($validator->fails()) {
         return response()->json([
@@ -41,9 +39,9 @@ class FoodItemController extends Controller
             'truck_id' => $request->truck_id,
             'description' => $request->description,
             'price' => $request->price,
-            'image' => $imagePath,
+            'image' => $request->image,
             'category_id' => $request->category_id,
-            'is_available' => $request->has('is_available'),
+            'is_available' => $request->is_available?$request->is_available:false,
         ]);
 
         return response()->json(['success' => true, 'message' => 'Food item added successfully!', 'data' => $foodItem], Response::HTTP_CREATED);
@@ -58,18 +56,12 @@ class FoodItemController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
+            'description' => 'required|string|max:255',
             'price' => 'required|numeric|min:0',
-            'image' => 'nullable|image|max:2048',
+            'image' => 'nullable|string|max:2048',
             'category_id' => 'nullable|exists:categories,id',
+            'is_available' => 'required|boolean'
         ]);
-
-        if ($request->hasFile('image')) {
-            if ($foodItem->image) {
-                Storage::disk('public')->delete($foodItem->image);
-            }
-            $imagePath = $request->file('image')->store('food-items', 'public');
-            $foodItem->update(['image' => $imagePath]);
-        }
 
         if ($validator->fails()) {
         return response()->json([
@@ -82,8 +74,9 @@ class FoodItemController extends Controller
             'name' => $request->name,
             'description' => $request->description,
             'price' => $request->price,
+            'image' => $request->image,
             'category_id' => $request->category_id,
-            'is_available' => $request->has('is_available'),
+            'is_available' => $request->is_available?$request->is_available:false,
         ]);
 
         return response()->json(['success' => true, 'message' => 'Food item updated successfully!', 'data' => $foodItem], Response::HTTP_OK);
