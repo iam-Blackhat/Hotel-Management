@@ -200,6 +200,7 @@ class FoodOrderController extends Controller
         $mostOrderedFood = DB::select("
             SELECT
                 t.food_id,
+                f.image As image_url,
                 f.name AS food_name,
                 SUM(t.quantity) AS total_quantity
             FROM food_truck_order_items o,
