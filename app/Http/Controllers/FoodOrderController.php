@@ -224,30 +224,57 @@ class FoodOrderController extends Controller
         ], 200);
     }
 
-    public function getTotalOrders(Request $request)
+    public function getOrdersWithSummary(Request $request)
     {
         // Get the filter from request (default: 'today')
         $filter = $request->query('filter', 'today');
+         $specificDate = $request->query('date');
 
-        // Define the date filter condition
-        $dateCondition = match ($filter) {
-            'today' => now()->toDateString(),
-            'this_week' => now()->startOfWeek()->toDateString(),
-            'this_month' => now()->startOfMonth()->toDateString(),
-            default => '1970-01-01'
-        };
+        // If custom date range is provided, use it, otherwise apply predefined filters
+        if ($specificDate) {
+            $dateCondition = "DATE(created_at) = ?";
+            $dateParams = [$specificDate];
+        } else {
+            $dateCondition = "created_at >= ?";
+            $dateParams = [match ($filter) {
+                'today' => now()->toDateString(),
+                'this_week' => now()->startOfWeek()->toDateString(),
+                'this_month' => now()->startOfMonth()->toDateString(),
+                default => '1970-01-01'
+            }];
+        }
 
-        // Raw SQL query to count total orders
-        $totalOrders = DB::select("
-            SELECT COUNT(*) AS total_orders
+        // Fetch total orders count and total revenue
+        $summary = DB::select("
+            SELECT
+                COUNT(*) AS total_orders,
+                COALESCE(SUM(total_amount), 0) AS total_revenue
             FROM food_truck_orders
-            WHERE created_at >= ?
-        ", [$dateCondition]);
+            WHERE $dateCondition
+        ", $dateParams);
+
+        // Fetch individual orders with required details
+        $orders = DB::select("
+            SELECT
+                order_id,
+                total_amount,
+                order_status,
+                payment_type,
+                created_at
+            FROM food_truck_orders
+            WHERE $dateCondition
+            ORDER BY created_at DESC
+        ", $dateParams);
 
         return response()->json([
             'status' => 'success',
             'filter' => $filter,
-            'data' => $totalOrders[0] ?? ['total_orders' => 0]
+            'date' => $specificDate ?? $dateParams[0],
+            'summary' => [
+                'total_orders' => $summary[0]->total_orders ?? 0,
+                'total_revenue' => $summary[0]->total_revenue ?? 0
+            ],
+            'data' => $orders
         ], 200);
     }
 
