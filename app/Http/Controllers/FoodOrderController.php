@@ -224,4 +224,31 @@ class FoodOrderController extends Controller
         ], 200);
     }
 
+    public function getTotalOrders(Request $request)
+    {
+        // Get the filter from request (default: 'today')
+        $filter = $request->query('filter', 'today');
+
+        // Define the date filter condition
+        $dateCondition = match ($filter) {
+            'today' => now()->toDateString(),
+            'this_week' => now()->startOfWeek()->toDateString(),
+            'this_month' => now()->startOfMonth()->toDateString(),
+            default => '1970-01-01'
+        };
+
+        // Raw SQL query to count total orders
+        $totalOrders = DB::select("
+            SELECT COUNT(*) AS total_orders
+            FROM food_truck_orders
+            WHERE created_at >= ?
+        ", [$dateCondition]);
+
+        return response()->json([
+            'status' => 'success',
+            'filter' => $filter,
+            'data' => $totalOrders[0] ?? ['total_orders' => 0]
+        ], 200);
+    }
+
 }
