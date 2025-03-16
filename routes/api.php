@@ -73,4 +73,5 @@ Route::prefix('orders')
         Route::put('/{order}', [FoodOrderController::class, 'update']);
         Route::delete('/{order}', [FoodOrderController::class, 'destroy']);
         Route::get('receipt-pdf/{orderId}',[FoodOrderController::class,'generateReceiptPdf']);
+        Route::post('/getMostOrderedFood', [FoodOrderController::class, 'getMostOrderedFood']);
     });

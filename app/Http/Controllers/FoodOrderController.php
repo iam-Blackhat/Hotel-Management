@@ -10,6 +10,8 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Validator as Validator;
 use Illuminate\Validation\Rule;
 use App\Services\PdfReceiptService;
+use Illuminate\Support\Facades\DB;
+
 
 class FoodOrderController extends Controller
 {
@@ -149,13 +151,15 @@ class FoodOrderController extends Controller
         // Metadata is already an array (no need for json_decode)
         $metadata = $foodOrderItem->metadata;
 
+
         // Construct order data
         $order = [
             'id' => $foodOrderItem->id?$foodOrderItem->id:"",
             'date' => $orderDate,
             'time' => $orderTime,
             'items' => [],
-            'total' => $foodOrder->total_amount ?? 0
+            'total' => $foodOrder->total_amount ?? 0,
+            'payment_type' => $foodOrder->payment_type
         ];
 
         foreach ($metadata as $key => $item) {
@@ -178,6 +182,46 @@ class FoodOrderController extends Controller
         return response($pdf)
             ->header('Content-Type', 'application/pdf')
             ->header('Content-Disposition', 'inline; filename="receipt.pdf"');
+    }
+
+    public function getMostOrderedFood(Request $request)
+    {
+        // Get the filter from request (default: 'today')
+        $filter = $request->query('filter', 'today');
+        // Define the date filter condition
+        $dateCondition = match ($filter) {
+            'today' => now()->toDateString(),
+            'this_week' => now()->startOfWeek()->toDateString(),
+            'this_month' => now()->startOfMonth()->toDateString(),
+            default => '1970-01-01'
+        };
+        // dd($dateCondition);
+        // Raw SQL query to fetch most ordered food items
+        $mostOrderedFood = DB::select("
+            SELECT
+                t.food_id,
+                f.name AS food_name,
+                SUM(t.quantity) AS total_quantity
+            FROM food_truck_order_items o,
+            JSON_TABLE(
+                o.metadata,
+                '$[*]'
+                COLUMNS (
+                    food_id INT PATH '$.food_id',
+                    quantity INT PATH '$.quantity'
+                )
+            ) AS t
+            JOIN food_items f ON t.food_id = f.id
+            WHERE o.created_at >= ?
+            GROUP BY t.food_id, f.name
+            ORDER BY total_quantity DESC
+        ", [$dateCondition]);
+
+        return response()->json([
+            'status' => 'success',
+            'filter' => $filter,
+            'data' => $mostOrderedFood
+        ], 200);
     }
 
 }
