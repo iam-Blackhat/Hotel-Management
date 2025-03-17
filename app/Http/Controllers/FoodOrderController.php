@@ -227,41 +227,98 @@ class FoodOrderController extends Controller
 
     public function getOrdersWithSummary(Request $request)
     {
-        // Get the filter from request (default: 'today')
         $filter = $request->query('filter', 'today');
-         $specificDate = $request->query('date');
+        $specificDate = $request->query('date');
 
-        // If custom date range is provided, use it, otherwise apply predefined filters
+        // Determine current period
         if ($specificDate) {
             $dateCondition = "DATE(created_at) = ?";
             $dateParams = [$specificDate];
+
+            // Previous day for specific date
+            $prevDate = Carbon::parse($specificDate)->subDay()->toDateString();
+            $prevDateCondition = "DATE(created_at) = ?";
+            $prevDateParams = [$prevDate];
         } else {
-            $dateCondition = "created_at >= ?";
-            $dateParams = [match ($filter) {
-                'today' => now()->toDateString(),
-                'this_week' => now()->startOfWeek()->toDateString(),
-                'this_month' => now()->startOfMonth()->toDateString(),
-                default => '1970-01-01'
-            }];
+            switch ($filter) {
+                case 'today':
+                    $currentDate = now()->toDateString();
+                    $prevDate = now()->subDay()->toDateString();
+
+                    $dateCondition = "DATE(created_at) = ?";
+                    $dateParams = [$currentDate];
+
+                    $prevDateCondition = "DATE(created_at) = ?";
+                    $prevDateParams = [$prevDate];
+                    break;
+
+                case 'this_week':
+                    $currentDate = now()->startOfWeek()->toDateString();
+                    $prevWeekStart = now()->subWeek()->startOfWeek()->toDateString();
+                    $prevWeekEnd = now()->subWeek()->endOfWeek()->toDateString();
+
+                    $dateCondition = "created_at >= ?";
+                    $dateParams = [$currentDate];
+
+                    $prevDateCondition = "created_at BETWEEN ? AND ?";
+                    $prevDateParams = [$prevWeekStart, $prevWeekEnd];
+                    break;
+
+                case 'this_month':
+                    $currentDate = now()->startOfMonth()->toDateString();
+                    $prevMonthStart = now()->subMonth()->startOfMonth()->toDateString();
+                    $prevMonthEnd = now()->subMonth()->endOfMonth()->toDateString();
+
+                    $dateCondition = "created_at >= ?";
+                    $dateParams = [$currentDate];
+
+                    $prevDateCondition = "created_at BETWEEN ? AND ?";
+                    $prevDateParams = [$prevMonthStart, $prevMonthEnd];
+                    break;
+
+                default:
+                    $dateCondition = "created_at >= ?";
+                    $dateParams = ['1970-01-01'];
+                    $prevDateCondition = "created_at >= ?";
+                    $prevDateParams = ['1970-01-01'];
+            }
         }
 
-        // Fetch total orders count and total revenue
-        $summary = DB::select("
-            SELECT
-                COUNT(*) AS total_orders,
-                COALESCE(SUM(total_amount), 0) AS total_revenue
+        // Current period summary
+        $summary = DB::selectOne("
+            SELECT COUNT(*) AS total_orders, COALESCE(SUM(total_amount), 0) AS total_revenue
             FROM food_truck_orders
             WHERE $dateCondition
         ", $dateParams);
 
-        // Fetch individual orders with required details
+        // Previous period summary
+        $prevSummary = DB::selectOne("
+            SELECT COUNT(*) AS total_orders, COALESCE(SUM(total_amount), 0) AS total_revenue
+            FROM food_truck_orders
+            WHERE $prevDateCondition
+        ", $prevDateParams);
+
+        // Calculate percentage changes
+    // Calculate percentage changes with proper handling for zero previous values
+    if ($prevSummary->total_orders == 0) {
+        $orderChange = $summary->total_orders > 0 ? 100.00 : 0.00;
+    } else {
+        $orderChange = (($summary->total_orders - $prevSummary->total_orders) / $prevSummary->total_orders) * 100;
+    }
+
+    if ($prevSummary->total_revenue == 0) {
+        $revenueChange = $summary->total_revenue > 0 ? 100.00 : 0.00;
+    } else {
+        $revenueChange = (($summary->total_revenue - $prevSummary->total_revenue) / $prevSummary->total_revenue) * 100;
+    }
+
+    // Round the values before sending the response
+    $orderChange = round($orderChange, 2);
+    $revenueChange = round($revenueChange, 2);
+
+        // Fetch orders for current period
         $orders = DB::select("
-            SELECT
-                order_id,
-                total_amount,
-                order_status,
-                payment_type,
-                created_at
+            SELECT order_id, total_amount, order_status, payment_type, created_at
             FROM food_truck_orders
             WHERE $dateCondition
             ORDER BY created_at DESC
@@ -272,8 +329,10 @@ class FoodOrderController extends Controller
             'filter' => $filter,
             'date' => $specificDate ?? $dateParams[0],
             'summary' => [
-                'total_orders' => $summary[0]->total_orders ?? 0,
-                'total_revenue' => $summary[0]->total_revenue ?? 0
+                'total_orders' => $summary->total_orders ?? 0,
+                'total_revenue' => $summary->total_revenue ?? 0,
+                'order_change' => round($orderChange, 2), // percentage
+                'revenue_change' => round($revenueChange, 2) // percentage
             ],
             'data' => $orders
         ], 200);
