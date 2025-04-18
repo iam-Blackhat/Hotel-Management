@@ -8,10 +8,20 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\FoodOrderController;
 use App\Http\Controllers\TruckController;
 use App\Http\Controllers\TruckEmployee;
+use App\Http\Controllers\FeedbackController;
 
 //Authentication
 Route::post('/login', [ApiController::class,'login']);
 Route::post('/logout', [ApiController::class,'logout'])->middleware('auth:api');
+
+
+Route::post('/feedbacks', [FeedbackController::class, 'store']);
+Route::get('/feedbacks', [FeedbackController::class, 'index']);
+Route::get('/feedback/ratings-summary', [FeedbackController::class, 'ratingsSummary']);
+
+
+
+
 
 
 //Account CRUD
@@ -22,6 +32,7 @@ Route::prefix('account')
     });
 
 //Food Iteams CRUD
+Route::get('/items-list', [FoodItemController::class, 'index']);
 Route::prefix('food-items')
     ->middleware('auth:api')
     ->group(function () {
