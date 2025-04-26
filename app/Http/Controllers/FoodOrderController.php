@@ -197,26 +197,45 @@ public function update(Request $request, $id)
     //     ], Response::HTTP_OK);
     // }
 
-    public function destroyOrder($id)
-{
-    $order = FoodTruckOrderItems::find($id);
 
-    if (!$order) {
+public function destroyOrder($id)
+{
+    DB::beginTransaction();
+
+    try {
+        $orderItem = FoodTruckOrderItems::find($id);
+
+        if (!$orderItem) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Order Item not found',
+            ], 404);
+        }
+
+        // 🚀 Delete the related food order directly by matching ID
+        $foodOrder = FoodTruckOrders::find($id);
+
+        if ($foodOrder) {
+            $foodOrder->delete();
+        }
+
+        $orderItem->delete();
+
+        DB::commit();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Order deleted successfully!',
+        ], Response::HTTP_OK);
+
+    } catch (\Exception $e) {
+        DB::rollback();
+
         return response()->json([
             'success' => false,
-            'message' => 'Order not found',
-        ], 404);
+            'message' => 'Failed to delete order. ' . $e->getMessage(),
+        ], 500);
     }
-
-    // Optional: Delete related order items manually if needed
-    FoodTruckOrders::where('order_id', $order->order_id)->delete();
-
-    $order->delete();
-
-    return response()->json([
-        'success' => true,
-        'message' => 'Order deleted successfully!',
-    ], Response::HTTP_OK);
 }
 
    public function generateReceiptPdf($orderId)
