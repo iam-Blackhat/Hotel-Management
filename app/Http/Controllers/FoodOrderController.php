@@ -334,5 +334,5 @@ class FoodOrderController extends Controller
             ],
             'data' => $orders
         ], 200);
-    }    
+    }
 }
