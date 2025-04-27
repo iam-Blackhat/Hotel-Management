@@ -18,8 +18,11 @@ class ApiController extends Controller
             'password'=>'required',
             'c_password'=>'required|same:password'
         ]);
-        if($validator->fails()){
-            return response()->json(['message'=>'validation error'],401);
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+            ], 422);
         }
         $data = $request->all();
         $data['password'] = Hash::make($data['password']);
@@ -48,7 +51,8 @@ class ApiController extends Controller
 
     public function logout(Request $request){
         $user = Auth::user();
-        $user->tokens()->delete();
+	$accessToken = $request->user()->token();
+        $accessToken->revoke();
         $response['user'] = $user->name;
         $response['message'] = "Logout Successfully";
         return response()->json($response,200);

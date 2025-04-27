@@ -1,72 +1,243 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Receipt</title>
     <style>
-        body { font-family: Arial, sans-serif; font-size: 10px; margin: 0; padding: 0; }
-        .container { width: 180px; margin: auto; text-align: center; padding: 5px; }
-        .header { font-size: 12px; font-weight: bold; margin-bottom: 5px; }
-        .header img { max-width: 50px; margin-bottom: 5px; } /* Add a logo if needed */
-        .header p { margin: 2px 0; }
-        .divider { border-top: 1px dashed #000; margin: 5px 0; }
-        .items { width: 100%; border-collapse: collapse; margin-top: 5px; }
-        .items td { padding: 2px; }
-        .items .item-name { text-align: left; }
-        .items .item-qty { text-align: center; }
-        .items .item-price { text-align: right; }
-        .total { font-size: 12px; font-weight: bold; margin-top: 5px; text-align: right; }
-        .footer { font-size: 8px; margin-top: 10px; line-height: 1.2; }
-        .footer .highlight { font-weight: bold; }
-        .barcode { margin-top: 10px; } /* Optional: Add a barcode for order tracking */
+
+        @font-face {
+            font-family: 'DejaVuSans';
+            src: url('{{ public_path('fonts/DejaVuSans.ttf') }}') format('truetype');
+        }
+
+        @page {
+            size: 58mm auto;
+            margin: 0;
+        }
+
+        body {
+            font-family: 'DejaVuSans', monospace, sans-serif;
+            font-size: 10px;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            width: 58mm;
+            margin: 0 auto;
+            padding: 5px;
+            text-align: center;
+        }
+
+        /* Move logo to top center */
+        .logo {
+            text-align: center;
+        }
+
+        .logo img {
+            max-width: 50px;
+            height: auto;
+        }
+
+        .shop-name {
+            font-weight: bold;
+            font-size: 12px;
+            margin-top: 3px;
+        }
+
+        .header {
+            text-align: center;
+            border-bottom: 1px dashed #000;
+            padding-bottom: 5px;
+        }
+
+        .divider {
+            border-top: 1px dashed #000;
+            margin: 8px 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 5px;
+            page-break-inside: avoid;
+        }
+
+        thead {
+            display: table-header-group;
+        }
+
+        tbody {
+            display: table-row-group;
+        }
+
+
+        th, td {
+            padding: 3px;
+            font-size: 10px;
+            text-align: left;
+            page-break-inside: avoid;
+        }
+
+        .items tbody tr {
+            page-break-inside: avoid;
+            break-inside: avoid;
+        }
+
+        .items {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 5px;
+            page-break-inside: auto;
+        }
+
+        .items thead {
+            display: table-header-group;
+        }
+
+        .items tbody {
+            display: table-row-group;
+        }
+
+
+
+        .items td.item-name {
+            text-align: left;
+            word-wrap: break-word;
+            max-width: 70px;
+        }
+
+        .orderhead {
+            font-weight: bold;
+            text-decoration: underline;
+            text-align: left;
+            margin-top: 5px;
+        }
+
+        .total {
+            font-size: 12px;
+            font-weight: bold;
+            text-align: right;
+        }
+
+        .footer {
+            font-size: 10px;
+            margin-top: 10px;
+        }
+
+        .footer p {
+            margin: 3px 0;
+        }
+
+        .thank-you {
+            font-weight: bold;
+            font-size: 12px;
+        }
+
+        /* Prevent breaking */
+        .receipt, .no-break, .items tbody tr, .header, .footer, .total {
+            page-break-inside: avoid;
+            break-inside: avoid;
+        }
+
+        /* QR Code */
+        .qr-code {
+            text-align: center;
+            margin-top: 5px;
+        }
+
+        .qr-code img {
+            width: 60px;
+            height: 60px;
+        }
     </style>
 </head>
+
 <body>
-    <div class="container">
-        <!-- Header Section -->
-        <div class="header">
-            <!-- Add a logo if available -->
-            <!-- <img src="logo.png" alt="Street Food Stall Logo"> -->
-            <p>Street Food Stall</p>
-            <p>Order Receipt</p>
-            <p><strong>Date:</strong> {{ $order['date'] }} | <strong>Time:</strong> {{ $order['time'] }}</p>
-            <p><strong>Order ID:</strong> #{{ $order['id'] }}</p>
-            <div class="divider"></div>
-        </div>
+    <div class="receipt">
+        <div class="container">
+            <!-- Logo & Shop Name -->
+            <div class="logo">
+                <img src="{{ public_path('assets/image.jpeg') }}" alt="logo">
+            </div>
+            <div class="shop-name">
+                D'square Food Cart
+            </div>
 
-        <!-- Items Table -->
-        <table class="items">
-            <tbody>
-                @foreach($order['items'] as $item)
+            <!-- Header Section -->
+            <div class="header">
+                <p><strong>Ph. No:</strong> 9514779494</p>
+                <p>Address - B122 cheran managar, 4th bus stop, Vilankurchi post, Coimbatore - 641035</p>
+            </div>
+
+            <!-- Order Details -->
+            <p class="orderhead">Order Details</p>
+            <table>
+                <thead>
                     <tr>
-                        <td class="item-name">{{$item['index']}}. {{ $item['name'] }}</td>
-                        <td class="item-qty">x{{ $item['quantity'] }}</td>
-                        <td class="item-price">${{ number_format($item['price'], 2) }}</td>
+                        <th>Order No.</th>
+                        <th>Issued Date</th>
+                        <th>Payment Type</th>
                     </tr>
-                @endforeach
-            </tbody>
-        </table>
-        <div class="divider"></div>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>{{ $order['id'] }}</td>
+                        <td>{{ $order['date'] }}, {{ $order['time'] }}</td>
+                        <td>{{ $order['payment_type'] }}</td>
+                    </tr>
+                </tbody>
+            </table>
 
-        <!-- Total Section -->
-        <p class="total">Total: ${{ number_format($order['total'], 2) }}</p>
-        <div class="divider"></div>
+            <div class="divider"></div>
 
-        <!-- Footer Section -->
-        <div class="footer">
-            <p>Thank you for dining with us!</p>
-            <p>Visit us again for more delicious treats.</p>
-            <p class="highlight">Follow us on social media:</p>
-            <p>Instagram: @streetfoodstall</p>
-            <p>Facebook: /streetfoodstall</p>
-            <p>Contact: +123 456 7890</p>
-            <p>Address: 123 Food Street, City, Country</p>
-            <!-- Optional: Add a barcode for order tracking -->
-            <div class="barcode">
-                <img src="barcode.png" alt="Order Barcode" style="max-width: 100%;">
+            <!-- Items Table -->
+            <table class="items">
+                <thead>
+                    <tr style="border-bottom:1px solid grey">
+                        <th >Item</th>
+                        <th>Qty</th>
+                        <th>Price</th>
+                        <th>Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($order['items'] as $item)
+                        <tr>
+                            <td >{{ $item['name'] }}</td>
+                            <td>{{ $item['quantity'] }}</td>
+                            <td>{{ number_format($item['price'], 2) }}</td>
+                            <td>{{ number_format($item['quantity'] * $item['price'], 2) }}</td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+
+            <div class="divider"></div>
+
+            <!-- Total Section -->
+            <div class="total">
+                <p>Total Amount: Rs.{{ number_format($order['total'], 2) }}</p>
+            </div>
+
+            <div class="divider"></div>
+
+            <!-- Footer -->
+            <div class="footer">
+                <p class="thank-you">! Thank you! Visit Again! :)</p>
+                <p class="thank-you">Double the Delight, only @ D<sup>2</sup></p>
+                <p>For inquiries, call +91-9514779494</p>
+                <p>Follow us on Insta: <span style="font-style:italic;">d2_delight_s</span></p>
+            </div>
+
+            <!-- QR Code -->
+            <div class="qr-code">
+                <img src="{{ public_path('assets/image.jpeg') }}" alt="Instagram QR">
             </div>
         </div>
     </div>
 </body>
+
 </html>
+

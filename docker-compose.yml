@@ -1,47 +1,60 @@
-version: "3.8"
+version: '3.8'
 
 services:
-    app:
-        build: .
-        container_name: laravel_hotel_app
-        restart: unless-stopped
-        volumes:
-            - /home/ubuntu/hotel-management:/var/www/html/hotel-management
-        networks:
-            - laravel_net
-        depends_on:
-            - db
+  app:
+    build: .
+    container_name: laravel_hotel_app
+    restart: unless-stopped
+    volumes:
+      - /home/ubuntu/hotel-management:/var/www/html/hotel-management
+    networks:
+      - laravel_net
+    depends_on:
+      - db
+    ports:
+      - "9000:9000"
+  frontend:
+    image: manikandandev/manikandandev-skycode:d2square-new-fe
+    restart: always
+    container_name: hotel_fe
+    networks: 
+      - laravel_net
+    ports:
+      - "3000:3000"
+  db:
+    image: mysql:8.0
+    container_name: laravel_hotel_db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: hotel_management
+      MYSQL_USER: laraveluser
+      MYSQL_PASSWORD: secret
+      MYSQL_ROOT_PASSWORD: rootpassword
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - laravel_net
+    ports:
+      - "3309:3306"
 
-    db:
-        image: mysql:8.0
-        container_name: laravel_hotel_db
-        restart: unless-stopped
-        environment:
-            MYSQL_DATABASE: hotel_management
-            MYSQL_USER: laraveluser
-            MYSQL_PASSWORD: secret
-            MYSQL_ROOT_PASSWORD: rootpassword
-        volumes:
-            - db_data:/var/lib/mysql
-        networks:
-            - laravel_net
-
-    nginx:
-        image: nginx:latest
-        container_name: laravel_hotel_nginx
-        restart: unless-stopped
-        ports:
-            - "80:80"
-        volumes:
-            - /home/ubuntu/hotel-management:/var/www/html/hotel-management
-            - ./nginx.conf:/etc/nginx/conf.d/default.conf
-        networks:
-            - laravel_net
-        depends_on:
-            - app
+#  nginx:
+#    image: nginx:latest
+#    container_name: laravel_hotel_nginx
+#    restart: unless-stopped
+#    ports:
+#      - "80:80"
+#      - "443:443"
+#    volumes:
+#      - /home/ubuntu/hotel-management:/var/www/html/hotel-management
+#      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+#      - /home/ubuntu/nginx-cert:/etc/nginx/ssl
+#    networks:
+#      - laravel_net
+#    depends_on:
+#      - app
 
 networks:
-    laravel_net:
+  laravel_net:
 
 volumes:
-    db_data:
+  db_data:

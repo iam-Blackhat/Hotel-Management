@@ -19,15 +19,7 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => ['http://localhost:5173'],
-
-    'allowed_origins_patterns' => [],
-
-    'allowed_headers' => ['Content-Type', 'Authorization', 'X-Requested-With', '*'],
-
-    'exposed_headers' => ['*'], // Fixed syntax
-
-    'allowed_origins' => ['*'],
+    'allowed_origins' => ['https://dsquare.d2delight.com','http://localhost:5173','https://localhost',],
 
     'allowed_origins_patterns' => [],
 
