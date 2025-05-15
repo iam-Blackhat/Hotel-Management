@@ -85,52 +85,159 @@ class FoodOrderController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(string $id)
-    {
-        $foodOrder = FoodTruckOrders::where('order_id',$id)->get();
-        $foodOrderItem = FoodTruckOrderItems::where('id',$id)->get();
+public function show(string $id)
+{
+    $foodOrder = FoodTruckOrders::where('order_id', $id)->get();
+    $foodOrderItem = FoodTruckOrderItems::where('id', $id)->get();
 
-        return response()->json([
-            'success' => true,
-            'foodOrder' => $foodOrder,
-            'foodOrderItem' => $foodOrderItem
-        ], Response::HTTP_OK);
+    // Add food name to each metadata item
+    foreach ($foodOrderItem as $orderItem) {
+        $metadata = $orderItem->metadata;
 
+        if (is_array($metadata)) {
+            foreach ($metadata as &$item) {
+                $food = FoodItem::find($item['food_id']);
+                $item['name'] = $food ? $food->name : 'Unknown';
+            }
+        }
+
+        // Set modified metadata back
+        $orderItem->metadata = $metadata;
     }
+
+    return response()->json([
+        'success' => true,
+        'foodOrder' => $foodOrder,
+        'foodOrderItem' => $foodOrderItem
+    ], Response::HTTP_OK);
+}
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, FoodTruckOrders $foodTruckOrders)
-    {
-        $validator = Validator::make($request->all(),[
-            "order_status" => "required|string"
-        ]);
+public function update(Request $request, $id)
+{
+    $validator = Validator::make($request->all(), [
+        "customer_number" => "required|string",
+        "status" => "required|string",
+        "truck_id" => "required|integer",
+        "payment_type" => "required|string",
+        "orders" => "required|array|min:1",
+        "orders.*.food_id" => "required|integer",
+        "orders.*.quantity" => "required|integer|min:1",
+        "orders.*.price" => "required|numeric|min:0",
+        "orders.*.subtotal" => "required|numeric|min:0"
+    ]);
 
-        if ($validator->fails()) {
+    if ($validator->fails()) {
         return response()->json([
             'success' => false,
             'errors' => $validator->errors(),
         ], 422);
-        }
-        $foodTruckOrders->update([
-            "order_status" => $request->order_status
-        ]);
-        return response()->json(['success' => true, 'message' => 'Food order status upated successfully!', 'data' => $foodTruckOrders],Response::HTTP_OK);
-
     }
+
+    // Step 1: Update FoodTruckOrders
+    $foodOrder = FoodTruckOrders::where('order_id', $id)->first();
+
+    if (!$foodOrder) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Order not found',
+        ], 404);
+    }
+
+    $total_amount = 0;
+       foreach ($request->orders as $order) {
+        $total_amount += $order['subtotal'];
+    }
+
+    $foodOrder->update([
+        'customer_number' => $request->customer_number,
+        'order_status' => $request->status,
+        'payment_type' => $request->payment_type,
+        'total_amount' =>$total_amount
+    ]);
+
+
+
+    // Step 2: Update FoodTruckOrderItems
+    $orderItems = FoodTruckOrderItems::where('id', $id)->first(); // assuming id = order_id
+
+    if (!$orderItems) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Order item not found',
+        ], 404);
+    }
+
+    $orderItems->update([
+        'truck_id' => $request->truck_id,
+        'metadata' => $request->orders,
+    ]);
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Order updated successfully',
+        'data' => [
+            'order' => $foodOrder,
+            'items' => $orderItems
+        ]
+    ], Response::HTTP_OK);
+}
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(FoodTruckOrderItems $foodTruckOrderItems)
-    {
-        $foodTruckOrderItems->delete();
+    // public function destroy(FoodTruckOrderItems $foodTruckOrderItems)
+    // {
+    //     $foodTruckOrderItems->delete();
+    //     return response()->json([
+    //         'success' => true,
+    //         'message' => 'Fodd order deleted successfully!'
+    //     ], Response::HTTP_OK);
+    // }
+
+
+public function destroyOrder($id)
+{
+    DB::beginTransaction();
+
+    try {
+        $orderItem = FoodTruckOrderItems::find($id);
+
+        if (!$orderItem) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Order Item not found',
+            ], 404);
+        }
+
+        // 🚀 Delete the related food order directly by matching ID
+        $foodOrder = FoodTruckOrders::find($id);
+
+        if ($foodOrder) {
+            $foodOrder->delete();
+        }
+
+        $orderItem->delete();
+
+        DB::commit();
+
         return response()->json([
             'success' => true,
-            'message' => 'Fodd order deleted successfully!'
+            'message' => 'Order deleted successfully!',
         ], Response::HTTP_OK);
+
+    } catch (\Exception $e) {
+        DB::rollback();
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Failed to delete order. ' . $e->getMessage(),
+        ], 500);
     }
+}
+
    public function generateReceiptPdf($orderId)
     {
         // Retrieve the order
@@ -334,5 +441,5 @@ class FoodOrderController extends Controller
             ],
             'data' => $orders
         ], 200);
-    }    
+    }
 }
