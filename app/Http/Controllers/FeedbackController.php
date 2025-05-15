@@ -27,15 +27,18 @@ class FeedbackController extends Controller
     {
         $perPage = $request->get('limit', 10);
 
-        $feedbacks = Feedback::orderByDesc('created_at')->paginate($perPage);
+        $fleedbacks = Feedback::orderByDesc('created_at')->paginate($perPage);
 
-        return response()->json($feedbacks);
+        return response()->json([
+            'status' => 'success',
+            'data' => $fleedbacks,
+        ], 200);
     }
 
 
     public function ratingsSummary()
 {
-    $feedbacks = \App\Models\Feedback::all();
+    $feedbacks = Feedback::all();
     $total = $feedbacks->count();
 
     if ($total === 0) {
